@@ -1,25 +1,15 @@
-require('dotenv').config()
+'use strict';
 const express = require('express')
 const nodemailer = require('nodemailer')
-const app = express()
+const serverless = require('serverless-http')
 
-const PORT = process.env.port || 3000
+const app = express()
 
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
 
-const transporter = nodemailer.createTransport({
-    host: process.env.MAIL_SMTP,
-    port: process.env.MAIL_PORT,
-    secure: false,
-    auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASSWORD
-    },
-})
-
-app.get('/', function (_, res) {
-    res.status(200).json({ success: true, data: 'Send a post request on /send route along with credentials to send emails!' })
+app.get('/', function (req, res) {
+    res.status(200).json({ success: true, data: 'Hello World!' })
 })
 
 app.post('/send', function (req, res) {
@@ -28,6 +18,17 @@ app.post('/send', function (req, res) {
 
         if (typeof fromName === 'string' && typeof to === 'string' && typeof subject === 'string'
             && typeof text === 'string' && typeof html === 'string' && typeof disableFileAccess === 'boolean') {
+
+            const transporter = nodemailer.createTransport({
+                host: process.env.MAIL_SMTP,
+                port: process.env.MAIL_PORT,
+                secure: false,
+                auth: {
+                    user: process.env.MAIL_USER,
+                    pass: process.env.MAIL_PASSWORD
+                },
+            })
+
             return new Promise(async (resolve, reject) => {
                 const info = await transporter.sendMail({
                     from: `"${fromName}" <${process.env.MAIL_USER}>`,
@@ -40,6 +41,7 @@ app.post('/send', function (req, res) {
 
                 console.log(info)
                 res.status(200).json({ success: true, data: info })
+
                 resolve()
             })
         }
@@ -48,4 +50,5 @@ app.post('/send', function (req, res) {
     }
 })
 
-app.listen(PORT, () => { console.log('Listening on port', PORT) })
+module.exports = app
+module.exports.handler = serverless(app)
